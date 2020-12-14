@@ -22,6 +22,7 @@ class Grid :
         self.size_x, self.size_y = size_x, size_y
         self.wrong_action_p = wrong_action_p
         self.generate_game()
+        print(f"{size_x}x{size_y} grid generated with wind effet : \n{self.wind}")
     def generate_game(self):
         self.step  = 0
         self.grid  = np.zeros((self.size_x,self.size_y))
@@ -30,6 +31,7 @@ class Grid :
         self.block = self.attribute_random_pos(self.BLOCK) #B
         self.end   = self.attribute_random_pos(self.END) #E
         self.agent = self.start
+        self.wind  = [0 if random.random()<0.6 else 1 if random.random()<0.7 else 2 for _ in range(self.size_y)]
         return self._get_state()
 
     def attribute_random_pos(self, nb):
@@ -94,29 +96,55 @@ class Grid :
         if   self.get_block_coord() == (new_x, new_y): #If block we do not moove
             return self._get_state(), -1, False, self.ACTIONS
         elif self.get_hole_coord() == (new_x, new_y):
-            self.update_pos_agent(x,y, new_x,new_y)
-            return self._get_state(), -10, True, None
+            reward = -10 # if player falls in hole, wind won t save him
+            return self._get_state(), -10 + reward, True, None
 
         elif self.get_end_coord() == (new_x, new_y):
-            self.update_pos_agent(x,y, new_x,new_y)
-            return self._get_state(), 10, True, self.ACTIONS
+            reward, end = self.update_pos_agent(x,y, new_x,new_y)
+            return self._get_state(), 10 + reward, True, self.ACTIONS # if we reach goal, wind cannot move us anymore
 
         elif new_x >= self.size_x or new_y >= self.size_y or new_x < 0 or new_y < 0:
             return self._get_state(), -1, False, self.ACTIONS
 
         elif self.step > 190:
-            self.update_pos_agent(x,y, new_x,new_y)
-            return self._get_state(), -10, True, self.ACTIONS
+            reward, end = self.update_pos_agent(x,y, new_x,new_y)
+            return self._get_state(), -10 + reward, True, self.ACTIONS
 
         else:
-            self.update_pos_agent(x,y, new_x,new_y)
-            return self._get_state(), -1, False, self.ACTIONS
+            reward, end = self.update_pos_agent(x,y, new_x,new_y)
+            return self._get_state(), -1 + reward, end, self.ACTIONS
         
     def update_pos_agent(self,x,y, new_x,new_y):
-        # ADD WIND EFFECT
-        # TO DO 
-        self.agent = new_x, new_y                            # store position
-        self.grid[x,y], self.grid[new_x,new_y]=0, self.AGENT # move agent in grid
+        # WIND EFFECT added from bottom to top with intensity self.wind[new_x]
+        if(self.wind[new_x]==0):
+            self.agent = new_x, new_y                            # store position
+            self.grid[x,y], self.grid[new_x,new_y]=0, self.AGENT # move agent in grid
+            return 0, False
+        else:
+            d_x, _ = self.MOVEMENTS[Grid.ACTION_UP]
+            new_x_winded = new_x + self.wind[new_x] * d_x
+            new_y_winded = new_y
+
+            if   self.get_block_coord() == (new_x_winded, new_y_winded): #If block we do not moove
+                return -5, False
+                
+            elif self.get_hole_coord() == (new_x_winded, new_y_winded):
+                self.agent = new_x_winded, new_y_winded              # store position
+                self.grid[x,y], self.grid[new_x_winded,new_y_winded] = 0, self.AGENT # move agent in grid
+                return -10, True
+
+            elif self.get_end_coord() == (new_x_winded, new_y_winded):
+                self.agent = new_x_winded, new_y_winded              # store position
+                self.grid[x,y], self.grid[new_x_winded,new_y_winded] = 0, self.AGENT # move agent in grid
+                return 1, True # 1 de récompense car il y a du style à arriver à l'objectif avec le vent :D
+
+            elif new_x_winded >= self.size_x or new_y_winded >= self.size_y or new_x_winded < 0 or new_y_winded < 0:
+                return -self.wind[new_x], False
+            
+            else :
+                self.agent = new_x_winded, new_y_winded              # store position
+                self.grid[x,y], self.grid[new_x_winded,new_y_winded] = 0, self.AGENT # move agent in grid
+                return 0, False
 
     def __str__(self):
         sentence = "\nWINDY GRID WORLD \n"

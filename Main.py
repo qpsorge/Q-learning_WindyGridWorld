@@ -4,26 +4,24 @@ import numpy as np
 
 def print_results(Q, game):
     import matplotlib.pyplot as plt
-    
     data = Q
-
-    
     fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    im = ax.imshow(data, cmap=plt.get_cmap('hot'), interpolation='nearest',
+    im = plt.imshow(data, cmap=plt.get_cmap('hot'), interpolation='nearest',
                         vmin=np.min(data), vmax=np.max(data))
-    ax.set_xticklabels(["UP","LEFT","DOWN","RIGHT"])
-    ax.set_yticklabels([str((i,j)) for i in range(4) for j in range(4)])
-    ax.grid(True)
+    #ax.set_xticklabels(["UP","LEFT","DOWN","RIGHT"])
+    #ax.set_yticklabels([str((i,j)) for i in range(game.size_x) for j in range(game.size_y)])
+    #ax.grid(True)
     fig.colorbar(im)
-    ax.set_title("Q table")
-    ax.set_xlabel("Actions: UP - LEFT - DOWN - RIGHT")
-    ax.set_ylabel("Cells : ")
+    #ax.set_title("Q table")
+    #ax.set_xlabel("Actions: UP - LEFT - DOWN - RIGHT")
+    #ax.set_ylabel("Cells : ")
+    plt.xlabel("actions")
+    plt.ylabel("states")
     #ax.annotate('END', game.get_end_coord())
     plt.show()
     return 0
 
-n, m = (4,4)
+n, m = (9,9)
 tp=False
 if tp:
     game = Game(n,m,0)
@@ -99,14 +97,17 @@ elif not(tp):
             actions.append(a)
             cumul_reward += r
         if(epoch==999):
-            print(states)
+            print(f"States : {states}")
         history["grids"].append(grids)
         history["states"].append(states)
         history["actions"].append(actions)
         history["rewards"].append(cumul_reward)
 
+    print(game.wind)
     print(f"Cumulative reward for {epochs} epochs : {sum(history['rewards'])}")
+    
     print(Q.shape)
+    print(f"Q matrix :\n\n {Q}")
     print_results(Q, game)
     #last_actions = history["actions"][len(history["actions"])-1]
     #[print(str(grid)+"\n"+str(action)+"\n") for (grid,action) in zip(history["grids"][-1],history["actions"][-1])]
